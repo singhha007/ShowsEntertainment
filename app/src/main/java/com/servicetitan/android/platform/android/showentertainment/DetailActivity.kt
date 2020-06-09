@@ -3,16 +3,19 @@ package com.servicetitan.android.platform.android.showentertainment
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.Composable
+import androidx.lifecycle.lifecycleScope
 import androidx.ui.core.*
 import androidx.ui.foundation.*
 import androidx.ui.foundation.shape.corner.CircleShape
 import androidx.ui.graphics.Color
 import androidx.ui.layout.*
 import androidx.ui.layout.ColumnScope.gravity
-import androidx.ui.material.*
+import androidx.ui.material.Card
+import androidx.ui.material.CircularProgressIndicator
+import androidx.ui.material.Divider
+import androidx.ui.material.MaterialTheme
 import androidx.ui.res.imageResource
 import androidx.ui.text.TextStyle
 import androidx.ui.text.font.FontWeight
@@ -21,10 +24,10 @@ import com.servicetitan.android.platform.android.showentertainment.api.ShowApiPr
 import com.servicetitan.android.platform.android.showentertainment.api.model.CreatedBy
 import com.servicetitan.android.platform.android.showentertainment.api.model.Season
 import com.servicetitan.android.platform.android.showentertainment.api.model.ShowDetail
-import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.rxkotlin.addTo
-import io.reactivex.schedulers.Schedulers
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -37,6 +40,7 @@ fun navigateToDetails(context: Context, showId: Int) =
 class DetailActivity : AppCompatActivity() {
 
     var disposable = CompositeDisposable()
+    var showApiRepository = ShowApiProvider.showApiRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,15 +50,13 @@ class DetailActivity : AppCompatActivity() {
 
     private fun requestShowDetails() {
         val showId = intent?.getIntExtra(KEY_SHOW_ID, -1) ?: -1
-        ShowApiProvider.provideShowApi().showDetails(showId)
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .doOnSubscribe { showLoading() }
-            .subscribe({
-                showMovieDetail(it)
-            }, {
-                Toast.makeText(this, "Failed: ${it.message}", Toast.LENGTH_SHORT).show()
-            }).addTo(disposable)
+
+        lifecycleScope.launch {
+            showApiRepository.showDetails(showId)
+                .onStart { showLoading() }
+                .handleErrors(TAG)
+                .collect { showMovieDetail(it) }
+        }
     }
 
     private fun showMovieDetail(showDetail: ShowDetail) {
@@ -82,7 +84,7 @@ class DetailActivity : AppCompatActivity() {
                     style = MaterialTheme.typography.h5
                         .merge(TextStyle(fontWeight = FontWeight(FontWeight.Bold.weight)))
                 )
-                Text(text = showDetail.genres.joinToString { it.name })
+                Text(text = showDetail.genres.joinToString { it.name ?: "" })
                 Text(text = generateDate(showDetail.firstAirDate))
 
                 Divider(

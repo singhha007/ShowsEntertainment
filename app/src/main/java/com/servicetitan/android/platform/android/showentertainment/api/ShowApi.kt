@@ -11,11 +11,11 @@ import retrofit2.http.Path
 interface ShowApi {
 
     @GET("tv/popular")
-    fun popularShow(): Observable<Response<Show>>
+    suspend fun popularShow(): Response<Show>
 
     @GET("tv/{id}")
-    fun showDetails(@Path("id") showId: Int): Observable<ShowDetail>
+    suspend fun showDetails(@Path("id") showId: Int): ShowDetail
 
     @GET("genre/movie/list")
-    fun genre(): Observable<GenreResponse>
+    suspend fun genre(): GenreResponse
 }

@@ -1,5 +1,6 @@
 package com.servicetitan.android.platform.android.showentertainment.api
 
+import com.servicetitan.android.platform.android.showentertainment.api.model.ShowApiRepository
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
@@ -25,9 +26,11 @@ object ShowApiProvider {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
             .client(provideOkHttp())
-            .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+//            .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
             .addConverterFactory(GsonConverterFactory.create())
             .build()
 
-    fun provideShowApi() = provideRetrofit().create(ShowApi::class.java)
+    private fun provideShowApi(): ShowApi = provideRetrofit().create(ShowApi::class.java)
+
+    fun showApiRepository() = ShowApiRepository(provideShowApi())
 }

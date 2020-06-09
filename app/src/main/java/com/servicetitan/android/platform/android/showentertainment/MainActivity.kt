@@ -1,35 +1,37 @@
 package com.servicetitan.android.platform.android.showentertainment
 
 import android.os.Bundle
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.Composable
-import androidx.ui.core.*
+import androidx.lifecycle.lifecycleScope
+import androidx.ui.core.Alignment
+import androidx.ui.core.ContentScale
+import androidx.ui.core.Modifier
+import androidx.ui.core.setContent
 import androidx.ui.foundation.*
 import androidx.ui.graphics.Color
 import androidx.ui.layout.*
-import androidx.ui.material.*
+import androidx.ui.material.Card
+import androidx.ui.material.CircularProgressIndicator
+import androidx.ui.material.Divider
+import androidx.ui.material.MaterialTheme
 import androidx.ui.material.ripple.ripple
 import androidx.ui.res.imageResource
 import androidx.ui.text.style.TextOverflow
 import androidx.ui.unit.dp
 import com.servicetitan.android.platform.android.showentertainment.api.ShowApiProvider
-import com.servicetitan.android.platform.android.showentertainment.api.model.GenreResponse
-import com.servicetitan.android.platform.android.showentertainment.api.model.Response
 import com.servicetitan.android.platform.android.showentertainment.api.model.Show
-import io.reactivex.Observable
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.functions.BiFunction
-import io.reactivex.rxkotlin.addTo
-import io.reactivex.schedulers.Schedulers
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.launch
 
 private val IMAGE_URL = "https://image.tmdb.org/t/p/w500/"
 private const val TAG = "MainActivity"
 
 class MainActivity : AppCompatActivity() {
 
-    var disposable = CompositeDisposable()
+    var showApiRepository = ShowApiProvider.showApiRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,22 +39,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun requestPopularShows() {
-        Observable.zip(
-            ShowApiProvider.provideShowApi().popularShow(),
-            ShowApiProvider.provideShowApi().genre(),
-            BiFunction { shows: Response<Show>, genreResponse: GenreResponse ->
-                shows.results.forEach { it.updateGenre(genreResponse.genres) }
-                shows.results
-            }
-        )
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .doOnSubscribe { showLoading() }
-            .subscribe({
-                updateView(it)
-            }, {
-                Toast.makeText(this, "Failed: ${it.message}", Toast.LENGTH_SHORT).show()
-            }).addTo(disposable)
+        lifecycleScope.launch {
+            showApiRepository.popularShow()
+                .onStart { showLoading() }
+                .combine(showApiRepository.genre()) { shows, genre ->
+                    shows.forEach { it.updateGenre(genre) }.let { shows }
+                }.handleErrors(TAG)
+                .collect {
+                    updateView(it)
+                }
+        }
     }
 
     private fun updateView(shows: List<Show>) {
@@ -110,7 +106,7 @@ class MainActivity : AppCompatActivity() {
 
                 Text(
                     modifier = Modifier.padding(vertical = 2.dp, horizontal = 8.dp),
-                    text = show.overview,
+                    text = show.overview ?: "",
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.body2
@@ -121,14 +117,14 @@ class MainActivity : AppCompatActivity() {
                         .padding(vertical = 4.dp, horizontal = 8.dp)
                 ) {
                     Text(
-                        text = show.genreList.map { it.name }.joinToString(),
+                        text = show.genreList.joinToString { it.name ?: "" },
                         style = MaterialTheme.typography.subtitle1,
                         modifier = Modifier.gravity(Alignment.TopStart).width(250.dp),
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = show.firstAirDate,
+                        text = show.firstAirDate ?: "",
                         style = MaterialTheme.typography.subtitle1,
                         modifier = Modifier.gravity(Alignment.BottomEnd)
                     )
@@ -143,10 +139,5 @@ class MainActivity : AppCompatActivity() {
                 CircularProgressIndicator()
             }
         }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        disposable.clear()
     }
 }

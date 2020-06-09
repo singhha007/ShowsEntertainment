@@ -9,7 +9,7 @@ data class GenreResponse(
 
 data class Genre(
     @SerializedName("id")
-    val id: Int,
+    val id: Int?,
     @SerializedName("name")
-    val name: String
+    val name: String?
 )
