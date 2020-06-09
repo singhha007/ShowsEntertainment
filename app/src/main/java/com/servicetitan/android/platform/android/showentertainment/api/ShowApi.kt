@@ -4,7 +4,6 @@ import com.servicetitan.android.platform.android.showentertainment.api.model.Gen
 import com.servicetitan.android.platform.android.showentertainment.api.model.Response
 import com.servicetitan.android.platform.android.showentertainment.api.model.Show
 import com.servicetitan.android.platform.android.showentertainment.api.model.ShowDetail
-import io.reactivex.Observable
 import retrofit2.http.GET
 import retrofit2.http.Path
 

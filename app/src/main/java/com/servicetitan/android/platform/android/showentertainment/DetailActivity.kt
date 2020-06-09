@@ -24,7 +24,6 @@ import com.servicetitan.android.platform.android.showentertainment.api.ShowApiPr
 import com.servicetitan.android.platform.android.showentertainment.api.model.CreatedBy
 import com.servicetitan.android.platform.android.showentertainment.api.model.Season
 import com.servicetitan.android.platform.android.showentertainment.api.model.ShowDetail
-import io.reactivex.disposables.CompositeDisposable
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
@@ -39,7 +38,6 @@ fun navigateToDetails(context: Context, showId: Int) =
 
 class DetailActivity : AppCompatActivity() {
 
-    var disposable = CompositeDisposable()
     var showApiRepository = ShowApiProvider.showApiRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -244,10 +242,5 @@ class DetailActivity : AppCompatActivity() {
                 CircularProgressIndicator()
             }
         }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        disposable.clear()
     }
 }
