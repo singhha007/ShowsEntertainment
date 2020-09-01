@@ -1,15 +1,18 @@
 package com.servicetitan.android.platform.android.showentertainment
 
+import android.graphics.Bitmap
+import android.graphics.drawable.Drawable
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.Composable
+import androidx.compose.MutableState
+import androidx.compose.mutableStateOf
 import androidx.lifecycle.lifecycleScope
-import androidx.ui.core.Alignment
-import androidx.ui.core.ContentScale
-import androidx.ui.core.Modifier
-import androidx.ui.core.setContent
+import androidx.ui.core.*
 import androidx.ui.foundation.*
 import androidx.ui.graphics.Color
+import androidx.ui.graphics.ImageAsset
+import androidx.ui.graphics.asImageAsset
 import androidx.ui.layout.*
 import androidx.ui.material.Card
 import androidx.ui.material.CircularProgressIndicator
@@ -19,6 +22,9 @@ import androidx.ui.material.ripple.ripple
 import androidx.ui.res.imageResource
 import androidx.ui.text.style.TextOverflow
 import androidx.ui.unit.dp
+import com.bumptech.glide.Glide
+import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.transition.Transition
 import com.servicetitan.android.platform.android.showentertainment.api.ShowApiProvider
 import com.servicetitan.android.platform.android.showentertainment.api.model.Show
 import kotlinx.coroutines.flow.collect
@@ -26,7 +32,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 
-private val IMAGE_URL = "https://image.tmdb.org/t/p/w500/"
+private val IMAGE_URL = "https://image.tmdb.org/t/p/w300/"
 private const val TAG = "MainActivity"
 
 class MainActivity : AppCompatActivity() {
@@ -79,11 +85,30 @@ class MainActivity : AppCompatActivity() {
     }
 
     @Composable
+    private fun generateImage(url: String?): MutableState<ImageAsset> {
+        val imageAsset: MutableState<ImageAsset> = mutableStateOf(ImageAsset(1, 1))
+        Glide.with(ContextAmbient.current)
+            .asBitmap()
+            .load(IMAGE_URL + url)
+            .into(object : CustomTarget<Bitmap>() {
+                override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
+                    imageAsset.value = resource.asImageAsset()
+                }
+
+                override fun onLoadCleared(placeholder: Drawable?) {
+                    TODO("Not yet implemented")
+                }
+
+            })
+        return imageAsset
+    }
+
+    @Composable
     fun ShowCardContent(show: Show) {
         Card(shape = MaterialTheme.shapes.medium, color = Color.White) {
             Column {
                 Image(
-                    asset = imageResource(R.drawable.placeholder),
+                    asset = generateImage(url = show.backdropPath).value,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.preferredHeight(120.dp).fillMaxSize()
                 )
